@@ -21,17 +21,23 @@ data GameState = GameState { viewport :: Viewport,
                              board :: Board
                            }
 
-horizontalLine left right yy = line [(left, yy), (right, yy)]
+positionToScreen :: Viewport -> Position -> Point
+positionToScreen (Viewport left top width) (xx, yy)  =
+    let spacing = width / 6.0
+        xx' = left + spacing * fromIntegral xx
+        yy' = top + spacing * fromIntegral yy
+    in (xx', yy')
 
-verticalLine top bottom xx = line [(xx, top), (xx, bottom)]
+drawSide :: GameState -> Position -> Side -> Picture
 
-{-
-drawBorder :: Viewport -> Picture
-drawBorder (Viewport left top width) =
-    let right = left + width
-        bottom = top + width
-    in line [(left, top), (right, top), (right, bottom), (left, bottom), (left, top)]
--}
+drawSide game pos Fox =
+    let (cx, cy) = positionToScreen (viewport game) pos
+    in Color blue $ Translate cx cy $ ThickCircle 30 5
+    
+drawSide game pos Goose =
+    let (cx, cy) = positionToScreen (viewport game) pos
+        arm = rectangleSolid 5 60
+    in Color red $ Translate cx cy $ Pictures [Rotate 45 arm, Rotate (-45) arm]
 
 drawGrid :: GameState -> Picture
 drawGrid (GameState (Viewport left top width) _) =
@@ -49,7 +55,8 @@ drawGrid (GameState (Viewport left top width) _) =
     in Pictures [Pictures lines, Pictures (map (Rotate 90) lines)]
 
 drawGame :: GameState -> Picture
-drawGame game@(GameState vp brd) = Pictures [drawGrid game]
+drawGame game@(GameState vp brd) = Pictures [drawGrid game, pieces]
+    where pieces = Pictures $ Map.foldrWithKey (\k v a -> drawSide game k v : a) []  brd
 
 handleInputEvent :: Event -> GameState -> GameState
 handleInputEvent _ = id
@@ -67,7 +74,9 @@ newGameState (w, h) =
               else h - (2 * margin)
         left = xcenter - (dim / 2.0)
         top = ycenter - (dim / 2.0)
-    in GameState (Viewport left top dim) Map.empty
+    in GameState (Viewport left top dim) (Map.fromList [((2, 2), Fox),
+                                                        ((3, 4), Fox),
+                                                        ((3, 1), Goose)])
 
 windowSize = (800, 600)
 windowPos = (10, 10)
