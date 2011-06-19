@@ -6,9 +6,7 @@ import Graphics.Gloss.Interface.Game
 
 import Drawing
 import Game
-
-handleInputEvent :: Event -> GameState -> GameState
-handleInputEvent _ = id
+import Input
 
 gameStep :: Float -> GameState -> GameState
 gameStep _ = id
