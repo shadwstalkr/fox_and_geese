@@ -1,4 +1,4 @@
-module Drawing (drawGame) where
+module Drawing (drawGame, createViewport) where
 
 import qualified Data.Map as Map
 import Graphics.Gloss
@@ -41,3 +41,15 @@ drawGrid (GameState (Viewport left top width) _) =
 drawGame :: GameState -> Picture
 drawGame game@(GameState vp brd) = Pictures [drawGrid game, pieces]
     where pieces = Pictures $ Map.foldrWithKey (\k v a -> drawSide game k v : a) []  brd
+
+createViewport :: Float -> Float -> Viewport
+createViewport w h =
+    let xcenter = 0
+        ycenter = 0
+        margin = 10
+        dim = if w < h
+              then w - (2 * margin)
+              else h - (2 * margin)
+        left = xcenter - (dim / 2.0)
+        top = ycenter - (dim / 2.0)
+    in Viewport left top dim
