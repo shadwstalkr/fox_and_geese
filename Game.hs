@@ -36,4 +36,24 @@ getPiece :: Position -> GameStateM (Maybe Side)
 getPiece pos = get >>= return . Map.lookup pos . board
 
 movePiece :: Position -> Position -> GameStateM ()
-movePiece _ _ = selectPosition Nothing
+movePiece from to = do
+  (valid, jumped) <- isMoveValid from to
+  if valid then move else return ()
+  selectPosition Nothing
+
+    where move =  do
+            game <- get
+            Just piece <- getPiece from
+            let moveBoard = Map.insert to piece . Map.delete from $ board game
+                -- If a piece was jumped, remove it from the board
+                newBoard = case jumped of
+                             Nothing -> moveBoard
+                             Just pos -> Map.delete pos moveBoard
+            put $ game {board = newBoard}
+            return ()
+
+
+isMoveValid :: Position -> Position -> GameStateM (Bool, Maybe Position)
+--isMoveValid (fx, fy) (tx, ty) = return . all $ [cellEmpty,
+--                                                adjacent || jump
+isMoveValid _ _ = return (True, Nothing)
