@@ -26,18 +26,17 @@ drawSide game pos Goose =
 drawGrid :: GameState -> Picture
 drawGrid (GameState (Viewport left top width) _) =
     let spacing = width / 6.0
-        offsets = map ((+ left) . (* spacing)) [0..6]
-        lineHeights = map getLineHeights [0..6]
+        lines = Pictures $ map Line $ concat [[[(xx, (-spacing)), (xx, spacing)]
+                                                   | xx <- [(-spacing), 0, spacing]],
+                                              [[(-spacing, -spacing), (spacing, spacing)]]]
+        subgrid = Pictures $ [lines, Rotate 90 lines]
+        subgridSpacing = width / 3.0
 
-        getLineHeights idx
-            | idx < 2 || idx > 4 = [top + spacing * 2, top + spacing * 4]
-            | otherwise = [top, top + width]
+        drawSubgrid (ox, oy) = Translate (left + center ox) (top + center oy) subgrid
+            where center offs = offs * subgridSpacing + spacing
 
-        linePts = [zip (repeat offset) lineHeight | (offset, lineHeight) <- zip offsets lineHeights]
-        lines = map line linePts
-
-    in Pictures [Pictures lines, Pictures (map (Rotate 90) lines)]
-
+    in Pictures $ map drawSubgrid [(1, 0), (0, 1), (1, 1), (2, 1), (1, 2)]
+                          
 drawGame :: GameState -> Picture
 drawGame game@(GameState vp brd) = Pictures [drawGrid game, pieces]
     where pieces = Pictures $ Map.foldrWithKey (\k v a -> drawSide game k v : a) []  brd
