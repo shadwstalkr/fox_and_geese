@@ -1,5 +1,6 @@
-module Drawing (drawGame, createViewport) where
+module Drawing (drawGame, createViewport, screenToPosition) where
 
+import Control.Monad.State
 import qualified Data.Map as Map
 import Graphics.Gloss
 
@@ -12,6 +13,15 @@ positionToScreen (Viewport left top width) (xx, yy)  =
         yy' = top + spacing * fromIntegral yy
     in (xx', yy')
 
+screenToPosition :: (Float, Float) -> GameStateM Position
+screenToPosition (sx, sy) = do
+  game <- get
+  let (Viewport left top width) = viewport game
+      spacing = width / 6.0
+      xx = round $ (sx - left) / spacing
+      yy = round $ (sy - top) / spacing
+  return (xx, yy)
+
 drawPiece :: GameState -> Position -> Side -> Picture
 
 drawPiece game pos piece =
@@ -22,8 +32,9 @@ drawPiece game pos piece =
          Goose -> Color red $ Translate cx cy $ Pictures [Rotate 45 arm, Rotate (-45) arm]
 
 drawGrid :: GameState -> Picture
-drawGrid (GameState (Viewport left top width) _) =
-    let spacing = width / 6.0
+drawGrid game =
+    let (Viewport left top width) = viewport game
+        spacing = width / 6.0
         lines = Pictures $ map Line $ concat [[[(xx, (-spacing)), (xx, spacing)]
                                                    | xx <- [(-spacing), 0, spacing]],
                                               [[(-spacing, -spacing), (spacing, spacing)]]]
@@ -34,10 +45,18 @@ drawGrid (GameState (Viewport left top width) _) =
             where center offs = offs * subgridSpacing + spacing
 
     in Pictures $ map drawSubgrid [(1, 0), (0, 1), (1, 1), (2, 1), (1, 2)]
+
+drawSelection :: GameState -> Picture
+drawSelection game =
+    case selectedPos game of
+      Nothing -> blank
+      Just pos ->
+          let (cx, cy) = positionToScreen (viewport game) pos
+          in Translate cx cy $ rectangleSolid 10 10
                           
 drawGame :: GameState -> Picture
-drawGame game@(GameState vp brd) = Pictures [drawGrid game, pieces]
-    where pieces = Pictures $ Map.foldrWithKey (\k v a -> drawPiece game k v : a) []  brd
+drawGame game = Pictures [drawGrid game, pieces, drawSelection game]
+    where pieces = Pictures $ Map.foldrWithKey (\k v a -> drawPiece game k v : a) []  (board game)
 
 createViewport :: Float -> Float -> Viewport
 createViewport w h =
