@@ -12,16 +12,14 @@ positionToScreen (Viewport left top width) (xx, yy)  =
         yy' = top + spacing * fromIntegral yy
     in (xx', yy')
 
-drawSide :: GameState -> Position -> Side -> Picture
+drawPiece :: GameState -> Position -> Side -> Picture
 
-drawSide game pos Fox =
-    let (cx, cy) = positionToScreen (viewport game) pos
-    in Color blue $ Translate cx cy $ ThickCircle 30 5
-    
-drawSide game pos Goose =
+drawPiece game pos piece =
     let (cx, cy) = positionToScreen (viewport game) pos
         arm = rectangleSolid 5 60
-    in Color red $ Translate cx cy $ Pictures [Rotate 45 arm, Rotate (-45) arm]
+    in case piece of
+         Fox -> Color blue $ Translate cx cy $ ThickCircle 30 5
+         Goose -> Color red $ Translate cx cy $ Pictures [Rotate 45 arm, Rotate (-45) arm]
 
 drawGrid :: GameState -> Picture
 drawGrid (GameState (Viewport left top width) _) =
@@ -39,7 +37,7 @@ drawGrid (GameState (Viewport left top width) _) =
                           
 drawGame :: GameState -> Picture
 drawGame game@(GameState vp brd) = Pictures [drawGrid game, pieces]
-    where pieces = Pictures $ Map.foldrWithKey (\k v a -> drawSide game k v : a) []  brd
+    where pieces = Pictures $ Map.foldrWithKey (\k v a -> drawPiece game k v : a) []  brd
 
 createViewport :: Float -> Float -> Viewport
 createViewport w h =
