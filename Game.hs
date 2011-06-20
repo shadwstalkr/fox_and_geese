@@ -36,6 +36,13 @@ initBoard = Map.fromList . concat $
              zip (zip [0, 1, 5, 6] (repeat 4)) (repeat Goose),
              [((2, 5), Fox), ((4, 5), Fox)]]
 
+adjacentPositions :: Position -> [Position]
+adjacentPositions (px, py) = filter onBoard . map addOffset $ offsets
+    where onBoard = (`elem` validPositions)
+          offsets = filter adjacent [(x, y) | x <- [-1..1], y <- [-1..1]]
+          adjacent delta@(dx, dy) = not (delta == (0, 0) ||
+                                         (odd (px + py) && dx /= 0 && dy /= 0))
+          addOffset (dx, dy) = (px + dx, py + dy)
 
 selectPosition :: Maybe Position -> GameStateM ()
 selectPosition pos = modify (\game -> game {selectedPos = pos})
@@ -80,8 +87,7 @@ isMoveValid from@(fx, fy) to@(tx, ty) = do
 
       gooseMovesForward = movingPiece == Fox || dy >= 0
 
-      adjacent = all (`elem` [-1, 0, 1]) [dx, dy] &&
-                 (even (tx + ty) || dx == 0 || dy == 0)
+      adjacent = to `elem` adjacentPositions from
 
       jumpedPos = getJumpedPos movingPiece from dx dy
 
