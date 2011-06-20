@@ -13,14 +13,13 @@ positionToScreen (Viewport left top width) (xx, yy)  =
         yy' = top + spacing * fromIntegral yy
     in (xx', yy')
 
-screenToPosition :: (Float, Float) -> GameStateM Position
-screenToPosition (sx, sy) = do
-  game <- get
+screenToPosition :: (Float, Float) -> GameState -> Position
+screenToPosition (sx, sy) game =
   let (Viewport left top width) = viewport game
       spacing = width / 6.0
       xx = round $ (sx - left) / spacing
       yy = round $ (sy - top) / spacing
-  return (xx, yy)
+  in (xx, yy)
 
 drawPiece :: GameState -> Position -> Side -> Picture
 
