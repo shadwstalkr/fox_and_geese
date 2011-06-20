@@ -31,6 +31,11 @@ validPositions = filter (not . invalid) [(x, y) | x <- [0..6], y <- [0..6]]
                                x < 2 && y > 4,
                                x > 4 && y > 4]
 
+initBoard = Map.fromList . concat $
+            [zip (filter (\(x, y) -> y < 4) validPositions) (repeat Goose),
+             zip (zip [0, 1, 5, 6] (repeat 4)) (repeat Goose),
+             [((2, 5), Fox), ((4, 5), Fox)]]
+
 getSelection :: GameStateM (Maybe Position)
 getSelection = get >>= return . selectedPos
 

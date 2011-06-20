@@ -15,9 +15,7 @@ newGameState :: (Float, Float) -> GameState
 newGameState (w, h) =
     GameState
     (createViewport w h)
-    (Map.fromList [((2, 2), Fox),
-                   ((3, 4), Fox),
-                   ((3, 1), Goose)])
+    initBoard
     Nothing
     Fox
 
