@@ -90,6 +90,8 @@ isMoveValid from@(fx, fy) to@(tx, ty) = do
 
       onBoard = to `elem` validPositions
 
+      gooseMovesForward = movingPiece == Fox || (dx >= 0 && dy >= 0)
+
       adjacent = all (`elem` [-1, 0, 1]) [dx, dy] &&
                  (even (tx + ty) || dx == 0 || dy == 0)
 
@@ -103,7 +105,7 @@ isMoveValid from@(fx, fy) to@(tx, ty) = do
                          Just Goose -> True
                          otherwise -> False
 
-  let valid = and [onBoard, destinationIsEmpty, adjacent || jump]
+  let valid = and [onBoard, gooseMovesForward, destinationIsEmpty, adjacent || jump]
   return (valid, jumpedPos)
 
       where getJumpedPos Fox (fx, fy) dx dy
