@@ -12,10 +12,13 @@ click :: Position -> GameStateM ()
 click pos = do
   selected <- getSelection
   clickedPiece <- getPiece pos
+  player <- getPlayer
   case selected of
     Nothing -> case clickedPiece of
                  Nothing -> selectPosition Nothing
-                 Just _ -> selectPosition $ Just pos
+                 Just piece -> if piece == player
+                                 then selectPosition $ Just pos
+                                 else return ()
     Just fromPos -> movePiece fromPos pos
 
 dispatchEvent :: Event -> GameStateM ()

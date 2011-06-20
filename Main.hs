@@ -19,6 +19,7 @@ newGameState (w, h) =
                    ((3, 4), Fox),
                    ((3, 1), Goose)])
     Nothing
+    Fox
 
 windowSize = (800, 600)
 windowPos = (10, 10)
