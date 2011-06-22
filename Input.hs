@@ -16,9 +16,8 @@ click pos = do
   case selected of
     Nothing -> case clickedPiece of
                  Nothing -> selectPosition Nothing
-                 Just piece -> if piece == player
-                                 then selectPosition $ Just pos
-                                 else return ()
+                 Just piece -> when (piece == player)
+                                 (selectPosition $ Just pos)
     Just fromPos -> movePiece fromPos pos
 
 dispatchEvent :: Event -> GameStateM ()

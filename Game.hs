@@ -53,11 +53,9 @@ getPiece pos = Map.lookup pos . board
 movePiece :: Position -> Position -> GameStateM ()
 movePiece from to = do
   (valid, jumped) <- isMoveValid from to
-  if valid
-    then do
-      move jumped
-      switchPlayer
-    else return ()
+  when valid $ do
+    move jumped
+    switchPlayer
   selectPosition Nothing
 
     where move jumped =  do
