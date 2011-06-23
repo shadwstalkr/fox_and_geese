@@ -71,18 +71,19 @@ movePiece :: Position -> Position -> GameStateM ()
 movePiece from to = do
   (valid, jumped) <- isMoveValid from to
   when valid $ do
-    move jumped
+    oldBoard <- gets board
+    let newBoard = jumpPiece jumped . move $ oldBoard
+    modify $ \game -> game {board = newBoard}
     switchPlayer
   selectPosition Nothing
 
-    where move jumped =  do
-            Just piece <- gets $ getPiece from
-            moveBoard <- gets $ Map.insert to piece . Map.delete from . board
-            -- If a piece was jumped, remove it from the board
-            let newBoard = case jumped of
-                             Nothing -> moveBoard
-                             Just pos -> Map.delete pos moveBoard
-            modify $ \game -> game {board = newBoard}
+    where move board' = case Map.lookup from board' of
+                          Nothing -> board'
+                          Just piece -> Map.insert to piece . Map.delete from $ board'
+
+          -- If a piece was jumped, remove it from the board
+          jumpPiece Nothing = id
+          jumpPiece (Just pos) = Map.delete pos
 
           switchPlayer = modify $ \game ->
                  case currentPlayer game of
