@@ -19,6 +19,7 @@ module Game where
 
 import Debug.Trace
 import Control.Monad.State
+import Data.Functor ((<$>))
 import qualified Data.Map as Map
 
 data Side = Fox | Goose
@@ -61,12 +62,16 @@ adjacentPositions (px, py) = filter onBoard . map addOffset $ offsets
                                          (odd (px + py) && dx /= 0 && dy /= 0))
           addOffset (dx, dy) = (px + dx, py + dy)
 
+getPiece :: Position -> GameState -> Maybe Side
+getPiece pos = getPiece' pos . board
+
+getPiece' :: Position -> Board -> Maybe Side
+getPiece' = Map.lookup
+
 selectPosition :: Maybe Position -> GameStateM ()
 selectPosition pos = modify (\game -> game {selectedPos = pos})
 
-getPiece :: Position -> GameState -> Maybe Side
-getPiece pos = Map.lookup pos . board
-
+-- Move a piece.  This will fail if the 'from' position is empty.
 movePiece :: Position -> Position -> GameStateM ()
 movePiece from to = do
   (valid, jumped) <- isMoveValid from to
@@ -77,55 +82,53 @@ movePiece from to = do
     switchPlayer
   selectPosition Nothing
 
-    where move board' = case Map.lookup from board' of
-                          Nothing -> board'
-                          Just piece -> Map.insert to piece . Map.delete from $ board'
+    where move board' = maybe board' (boardAfterMove board') $ getPiece' from board'
 
           -- If a piece was jumped, remove it from the board
           jumpPiece Nothing = id
           jumpPiece (Just pos) = Map.delete pos
+
+          boardAfterMove board' piece = Map.insert to piece . Map.delete from $ board'
 
           switchPlayer = modify $ \game ->
                  case currentPlayer game of
                    Fox ->   game {currentPlayer = Goose}
                    Goose -> game {currentPlayer = Fox}
 
-
+-- Test if a move is valid. This will fail if the 'from' position is empty
 isMoveValid :: Position -> Position -> GameStateM (Bool, Maybe Position)
 isMoveValid from@(fx, fy) to@(tx, ty) = do
   Just movingPiece <- gets $ getPiece from
+  destinationIsEmpty <- (not . Map.member to) <$> gets board
+  isJump <- isGoose . jumpedPos $ movingPiece
 
-  destinationIsEmpty <- gets $ not . Map.member to . board
-  let dx = tx - fx
-      dy = ty - fy
+  valid <- return $ and [onBoard,
+                         movingPiece == Fox || movingForward,
+                         destinationIsEmpty,
+                         isAdjacent || isJump]
 
-      onBoard = to `elem` validPositions
+  return (valid, jumpedPos movingPiece)
 
-      gooseMovesForward = movingPiece == Fox || dy >= 0
+      where
+        dx = tx - fx
+        dy = ty - fy
 
-      adjacent = to `elem` adjacentPositions from
+        onBoard = to `elem` validPositions
 
-      jumpedPos = getJumpedPos movingPiece from dx dy
+        isAdjacent = to `elem` adjacentPositions from
 
-      getJumpedPos Fox (fx, fy) dx dy
-          | dx == 0 && abs dy == 2 = Just (fx, fy + sign dy)
-          | dy == 0 && abs dx == 2 = Just (fx + sign dx, fy)
-          | even (fx + fy) && abs dx == 2 && abs dy == 2 = Just (fx + sign dx, fy + sign dy)
-      getJumpedPos _ _ _ _ = Nothing
+        movingForward = dy >= 0
 
-      sign n
-          | n < 0 = -1
-          | otherwise = 1
+        -- Given the piece doing the jumping, returns the position jumped if it's valid
+        jumpedPos Fox
+            | dx == 0 && abs dy == 2                        = Just (fx, fy + sign dy)
+            | dy == 0 && abs dx == 2                        = Just (fx + sign dx, fy)
+            | even (fx + fy) && abs dx == 2 && abs dy == 2  = Just (fx + sign dx, fy + sign dy)
+        jumpedPos _ = Nothing
 
-  jump <- case jumpedPos of
-            Nothing -> return False
-            Just pos -> do
-              jumpedPiece <- gets $ getPiece pos
-              return $ case jumpedPiece of
-                         Just Goose -> True
-                         otherwise -> False
+        sign n
+            | n < 0      = -1
+            | otherwise  = 1
 
-  valid <- return $ and [onBoard, gooseMovesForward, destinationIsEmpty, adjacent || jump]
-
-  return (valid, jumpedPos)
-
+        isGoose Nothing = return False
+        isGoose (Just pos) = (Just Goose ==) <$> (gets $ getPiece pos)
