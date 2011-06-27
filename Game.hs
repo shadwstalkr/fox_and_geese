@@ -121,14 +121,10 @@ isMoveValid from@(fx, fy) to@(tx, ty) = do
 
         -- Given the piece doing the jumping, returns the position jumped if it's valid
         jumpedPos Fox
-            | dx == 0 && abs dy == 2                        = Just (fx, fy + sign dy)
-            | dy == 0 && abs dx == 2                        = Just (fx + sign dx, fy)
-            | even (fx + fy) && abs dx == 2 && abs dy == 2  = Just (fx + sign dx, fy + sign dy)
+            | dx == 0 && abs dy == 2                        = Just (fx, fy + signum dy)
+            | dy == 0 && abs dx == 2                        = Just (fx + signum dx, fy)
+            | even (fx + fy) && abs dx == 2 && abs dy == 2  = Just (fx + signum dx, fy + signum dy)
         jumpedPos _ = Nothing
-
-        sign n
-            | n < 0      = -1
-            | otherwise  = 1
 
         isGoose Nothing = return False
         isGoose (Just pos) = (Just Goose ==) <$> (gets $ getPiece pos)
